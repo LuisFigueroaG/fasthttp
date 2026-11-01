@@ -2034,7 +2034,9 @@ func (req *Request) Write(w *bufio.Writer) error {
 		}
 		req.Header.SetRequestURIBytes(req.requestURIFromURI())
 
-		if len(uri.username) > 0 {
+		// Like net/http, only fill in Authorization from the userinfo
+		// if it hasn't been set already.
+		if len(uri.username) > 0 && len(req.Header.peek(strAuthorization)) == 0 {
 			// RequestHeader.SetBytesKV only uses RequestHeader.bufKV.key
 			// So we are free to use RequestHeader.bufKV.value as a scratch pad for
 			// the base64 encoding.
