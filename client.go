@@ -1283,6 +1283,7 @@ func responseBodyDrainSize(maxBodySize int) int {
 }
 
 func doRequestFollowRedirectsBuffer(req *Request, dst []byte, url string, c clientDoer) (statusCode int, body []byte, err error) {
+	req.SetRequestURI(url)
 	resp := AcquireResponse()
 	bodyBuf := resp.bodyBuffer()
 	resp.KeepBodyBuffer = true
@@ -1319,7 +1320,6 @@ func doRequestFollowRedirects(
 	hasBodyStream := req.IsBodyStream()
 
 	for {
-		req.SetRequestURI(url)
 		if err := req.parseURI(); err != nil {
 			return 0, nil, err
 		}
@@ -1399,6 +1399,11 @@ func doRequestFollowRedirects(
 		if err = closeOrDrainResponseBody(resp, maxResponseBodyDrainSize); err != nil {
 			break
 		}
+
+		// Set the URI here and not at the top of the loop: DoRedirects
+		// passes req.URI().String() as url, which leaves out the userinfo,
+		// so the first request has to go out with the URI the caller set.
+		req.SetRequestURI(url)
 	}
 
 	return statusCode, body, err
